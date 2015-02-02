@@ -1,0 +1,23 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.wkwan.cmput301assignment1.ReviewAndChange" >
+    
+	<item android:id="@+id/action_add_expense"
+          android:orderInCategory="100"
+	      android:icon="@drawable/ic_action_new"
+	      android:title="@string/user_create_expense"
+	      android:showAsAction="ifRoom" />
+    
+	<item android:id="@+id/action_edit_claim"
+          android:orderInCategory="100"
+	      android:icon="@drawable/ic_action_edit"
+	      android:title="@string/user_edit_claim"
+	      android:showAsAction="ifRoom" />
+    
+	<item
+        android:id="@+id/action_delete_claim"
+        android:orderInCategory="102"
+        android:showAsAction="never"
+        android:title="@string/user_delete_claim" />
+
+</menu>

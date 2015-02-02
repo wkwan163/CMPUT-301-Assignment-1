@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:contentDescription="@string/user_confirm"
+    android:orientation="vertical" >
+
+    <ImageButton
+        android:id="@+id/accept_expense_button"
+        style="?android:attr/actionButtonStyle"
+        android:layout_width="?android:attr/actionBarSize"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:contentDescription="@string/user_confirm"
+        android:src="@drawable/ic_action_accept" />
+
+    <TextView
+        android:id="@+id/expense_total_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toRightOf="@+id/accept_expense_button"
+        android:text="@string/header_change_expense"
+        android:textColor="#ffffff"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+</RelativeLayout>
+

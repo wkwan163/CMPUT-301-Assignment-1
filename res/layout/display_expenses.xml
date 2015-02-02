@@ -1,0 +1,40 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.wkwan.cmput301assignment1.ReviewAndChange" >
+
+    <Space
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="61dp" />
+
+    <ListView
+        android:id="@+id/expense_listview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/expense_divider"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true" />
+
+	<View
+	    android:id="@+id/expense_divider"
+	    android:layout_width="match_parent"
+	    android:layout_height="1dp"
+	    android:layout_above="@+id/expense_total_textview"
+	    android:background="?android:attr/listDivider" />
+
+    <TextView
+        android:id="@+id/expense_total_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="6dp"
+        android:layout_marginTop="6dp"
+        android:gravity="center_horizontal"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+</RelativeLayout>
