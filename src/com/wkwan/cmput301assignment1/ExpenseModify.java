@@ -1,11 +1,10 @@
 package com.wkwan.cmput301assignment1;
 
-import java.math.BigDecimal;
-import java.util.Currency;
-
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import java.math.BigDecimal;
+import java.util.Currency;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Editable;
@@ -20,45 +19,40 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-/*
- * Lets the user modify the settings for an expense.
- * 
- * CLAIM_INDEX must be passed as an integer extra. The claim in
- * ClaimListController at index CLAIM_INDEX will be edited.
- * 
- * If EXPENSE_INDEX is passed as an integer extra, then the expense
- * in the claim's list at index EXPENSE_INDEX will be edited rather
- * than creating a new one.
- */
+// This class allows users to access, review, and modify any expenses that
+// they have previously made in a particular claim. The use of the variable
+// expenseOrder is similar to how claimOrder is used in the SummaryAccess class
+// in which it is used loosely as an index that allows the app to know
+// whether it is working on a new expense or a pre-existing expense in a list of
+// pre-existing expenses.
 
 public class ExpenseModify extends Activity {
-	public static final String CLAIM_INDEX = "CLAIM_INDEX";
-	public static final String EXPENSE_INDEX = "EXPENSE_INDEX";
+	public static final String claimOrder = "CLAIM_ORDER";
+	public static final String expenseOrder = "EXPENSE_ORDER";
 	
-	private View actionBarView;
-	private Claim claim = null;
-	private Expense expense = null;		// This is the original expense
-	private Expense tempExpense = null;	// This will be copied back to expense when changes are saved
+	private View top_action_bar;
+	private ClaimCreate userclaim = null;
+	private ExpenseCreate userexpense = null;
+	private ExpenseCreate toolexpense = null;	
 	
-	private DatePickerController datePicker = null;
-	private Spinner categorySpinner = null;
-	private Spinner currencySpinner = null;
-	private EditText amountEditText = null;
-	private TextView descriptionEditText = null;
+	private UserDateSelection dateSelect = null;
+	private Spinner triptypeSpinner = null;
+	private Spinner moneySpinner = null;
+	private EditText costText = null;
+	private TextView tripdescriptionText = null;
 	
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        actionBarView = getLayoutInflater().inflate(R.layout.menu_edit_expense, null);
-        ActionBar actionBar = getActionBar();
-        actionBar.setCustomView(actionBarView);
-        actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        getMenuInflater().inflate(R.menu.edit_expense, menu);
+        top_action_bar = getLayoutInflater().inflate(R.layout.expense_modification, null);
+        ActionBar screentopheader = getActionBar();
+        screentopheader.setCustomView(top_action_bar);
+        screentopheader.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        getMenuInflater().inflate(R.menu.expense_change, menu);
         
-        // Handle onClick for custom accept button
-        actionBar.getCustomView().findViewById(R.id.accept_expense_button).setOnClickListener(new View.OnClickListener() {
+        screentopheader.getCustomView().findViewById(R.id.accept_expense_button).setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-	        	saveChanges();
+	        	keepEdits();
 	        	finish();
 			}
 		});
@@ -68,113 +62,102 @@ public class ExpenseModify extends Activity {
 	
 	@Override
 	public void onBackPressed() {
-		discardAlert();
+		removeWarning();
 	}
 	
 	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+	public boolean onOptionsItemSelected(MenuItem option) {
+        int face = option.getItemId();
         
-        switch (id) {
+        switch (face) {
         case R.id.action_discard_expense_changes:
-        	discardAlert();
+        	removeWarning();
         	return true;
         	
         case R.id.action_delete_expense:
-        	deleteAlert();
+        	removeCaution();
         	return true;
         	
     	default:
     		break;
         }
         
-	    return super.onOptionsItemSelected(item);
+	    return super.onOptionsItemSelected(option);
 	}
 
-	/** Called when the activity is first created. */
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
-	    super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit_expense);
+	public void onCreate(Bundle persistentinfo) {
+	    super.onCreate(persistentinfo);
+        setContentView(R.layout.write_expense);
         
-        // Populate category spinner
-        ArrayAdapter<CharSequence> categoryAdapter = ArrayAdapter.createFromResource(this,
-        		R.array.expense_categories,
+        ArrayAdapter<CharSequence> categoryLister = ArrayAdapter.createFromResource(this,
+        		R.array.type_of_expense,
         		android.R.layout.simple_spinner_item);
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        categorySpinner = (Spinner) findViewById(R.id.expense_category_spinner);
-        categorySpinner.setAdapter(categoryAdapter);
+        categoryLister.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        triptypeSpinner = (Spinner) findViewById(R.id.expense_category_spinner);
+        triptypeSpinner.setAdapter(categoryLister);
         
-        // Populate currency spinner
-        ArrayAdapter<Currency> currencyAdapter = new ArrayAdapter<Currency>(this,
+        ArrayAdapter<Currency> currencyLister = new ArrayAdapter<Currency>(this,
         		android.R.layout.simple_spinner_item);
-        currencyAdapter.addAll(CurrencyHelper.getAllCurrencies());
-        currencyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        currencyLister.addAll(InternationalCurrencies.getAllCurrencies());
+        currencyLister.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         
-        currencySpinner = (Spinner) findViewById(R.id.expense_currency_spinner);
-        currencySpinner.setAdapter(currencyAdapter);
+        moneySpinner = (Spinner) findViewById(R.id.expense_currency_spinner);
+        moneySpinner.setAdapter(currencyLister);
 		
-		// Get the claim
-        Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-        	int claimIndex = extras.getInt(CLAIM_INDEX, -1);
-        	int expenseIndex = extras.getInt(EXPENSE_INDEX, -1);
+        Bundle enteredinfo = getIntent().getExtras();
+        if (enteredinfo != null) {
+        	int claimset = enteredinfo.getInt(claimOrder, -1);
+        	int expenseset = enteredinfo.getInt(expenseOrder, -1);
         	
-        	if (claimIndex != -1) {
-        		claim = ClaimListController.getClaimList().getClaim(claimIndex);
-            	if (expenseIndex != -1) expense = claim.getExpenseList().get(expenseIndex);
+        	if (claimset != -1) {
+        		userclaim = SummaryAccess.getClaimList().getClaim(claimset);
+            	if (expenseset != -1) userexpense = userclaim.getExpenseList().get(expenseset);
         	}
         }
         
-        // Missing claim
-        if (claim == null) {
-        	throw new RuntimeException("Attempted to edit expense for nonexistent claim");
+        if (userclaim == null) {
+        	throw new RuntimeException("There is no claim for which to review any expenses");
         }
         
-        // Need to make a new expense
-        if (expense == null) {
-        	tempExpense = new Expense();
+        if (userexpense == null) {
+        	toolexpense = new ExpenseCreate();
         	
-    	// Existing expense so make a copy of it
         } else {
-        	tempExpense = new Expense(expense);
+        	toolexpense = new ExpenseCreate(userexpense);
         }
         
-        // Set up the date field as it needs a special controller
-        // We don't need a special listener to update tempExpense.getDate, as the controller handles it
-        TextView dateText = (TextView) findViewById(R.id.expense_date_textview);
-        datePicker = new DatePickerController(dateText, tempExpense.getDate(), claim.getFrom(), claim.getTo(), null);
+        TextView mmddyyText = (TextView) findViewById(R.id.expense_date_textview);
+        dateSelect = new UserDateSelection(mmddyyText, toolexpense.getmmddyy(), userclaim.getStartTime(), userclaim.getEndTime(), null);
         
-    	// Get other fields
-        amountEditText = (EditText) findViewById(R.id.expense_amount_edittext);
-        descriptionEditText = (TextView) findViewById(R.id.expense_description_edittext);
+        costText = (EditText) findViewById(R.id.expense_amount_edittext);
+        tripdescriptionText = (TextView) findViewById(R.id.expense_description_edittext);
         
-        // Set listener
-        categorySpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+        triptypeSpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 			@Override
             public void onItemSelected(AdapterView<?> parent, View view,
                     int position, long id) {
 				
-	            tempExpense.setCategory(categorySpinner.getSelectedItem().toString());
+	            toolexpense.setexpensetype(triptypeSpinner.getSelectedItem().toString());
             }
 
 			@Override
             public void onNothingSelected(AdapterView<?> parent) {}
 		});
         
-        currencySpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+        moneySpinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 			@Override
             public void onItemSelected(AdapterView<?> parent, View view,
                     int position, long id) {
 	            
-				tempExpense.setCurrency((Currency) currencySpinner.getSelectedItem());
+				toolexpense.setCurrency((Currency) moneySpinner.getSelectedItem());
             }
 
 			@Override
             public void onNothingSelected(AdapterView<?> parent) {}
 		});
         
-        amountEditText.addTextChangedListener(new TextWatcher() {
+        costText.addTextChangedListener(new TextWatcher() {
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {}
 			
@@ -184,15 +167,15 @@ public class ExpenseModify extends Activity {
 			@Override
 			public void afterTextChanged(Editable s) {
 				try {
-					tempExpense.setAmount(new BigDecimal(s.toString()));
+					toolexpense.setcost(new BigDecimal(s.toString()));
 				}
 				catch (NumberFormatException e) {
-					amountFormatError();
+					entercostError();
 				}
 			}
 		});
         
-        descriptionEditText.addTextChangedListener(new TextWatcher() {
+        tripdescriptionText.addTextChangedListener(new TextWatcher() {
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {}
 			
@@ -201,38 +184,31 @@ public class ExpenseModify extends Activity {
 			
 			@Override
 			public void afterTextChanged(Editable s) {
-				tempExpense.setDescription(s.toString());
+				toolexpense.setexpensedescription(s.toString());
 			}
 		});
         
-        // Populate fields
-        categorySpinner.setSelection(categoryAdapter.getPosition(tempExpense.getCategory()));
-        currencySpinner.setSelection(currencyAdapter.getPosition(tempExpense.getCurrency()));
-		descriptionEditText.setText(tempExpense.getDescription());
-		amountEditText.setText(tempExpense.getAmount().toPlainString());
+        triptypeSpinner.setSelection(categoryLister.getPosition(toolexpense.getexpensetype()));
+        moneySpinner.setSelection(currencyLister.getPosition(toolexpense.getCurrency()));
+		tripdescriptionText.setText(toolexpense.getexpensedescription());
+		costText.setText(toolexpense.getcost().toPlainString());
 	}
 	
-	/*
-	 * Displays a format error for the amount field
-	 */
-	private void amountFormatError() {
-		amountEditText.setError(getString(R.string.amount_format_error));
+	private void entercostError() {
+		costText.setError(getString(R.string.cost_display_caution));
 	}
 	
-	/**
-	 * Ask before deleting expense.
-	 */
-	private void deleteAlert() {
+	private void removeCaution() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(R.string.delete_expense_message)
-			   .setPositiveButton(R.string.action_delete_expense, new DialogInterface.OnClickListener() {
+		builder.setMessage(R.string.remove_expense_caution)
+			   .setPositiveButton(R.string.user_delete_expense, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						deleteClaim();
+						removeClaim();
 						finish();
 					}
 			   })
-			   .setNegativeButton(R.string.action_cancel, new DialogInterface.OnClickListener() {
+			   .setNegativeButton(R.string.user_undo, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 					}
@@ -240,27 +216,23 @@ public class ExpenseModify extends Activity {
 		builder.create().show();
 	}
 	
-	/**
-	 * Delete the expense.
-	 */
-	private void deleteClaim() {
-		claim.getExpenseList().removeExpense(expense);
-		ClaimListController.save();
+	private void removeClaim() {
+		userclaim.getExpenseList().removeExpense(userexpense);
+		SummaryAccess.save();
 		
 		finish();
 	}
 	
-	// Ask before discarding changes
-	private void discardAlert() {
+	private void removeWarning() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(R.string.discard_message)
-			   .setPositiveButton(R.string.action_discard, new DialogInterface.OnClickListener() {
+		builder.setMessage(R.string.undo_edits_caution)
+			   .setPositiveButton(R.string.user_remove, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						finish();
 					}
 			   })
-			   .setNegativeButton(R.string.action_cancel, new DialogInterface.OnClickListener() {
+			   .setNegativeButton(R.string.user_undo, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 					}
@@ -268,19 +240,15 @@ public class ExpenseModify extends Activity {
 		builder.create().show();
 	}
 	
-	// Save changes from the temporary expense to the actual expense
-	// If necessary, create a new expense in the claim
-	private void saveChanges() {
-		// Create the new expense to the claim
-		if (expense == null) {
-			expense = new Expense(tempExpense);
-			claim.getExpenseList().add(expense);
+	private void keepEdits() {
+		if (userexpense == null) {
+			userexpense = new ExpenseCreate(toolexpense);
+			userclaim.getExpenseList().add(userexpense);
 		
-		// Expense already exists
 		} else {
-			expense.copyFrom(tempExpense);
+			userexpense.mirror(toolexpense);
 		}
 		
-		ClaimListController.save();
+		SummaryAccess.save();
 	}
 }
